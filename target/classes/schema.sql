@@ -1,0 +1,18 @@
+CREATE TABLE Client (
+    id INTEGER NOT NULL PRIMARY KEY,
+    fio VARCHAR(50) NOT NULL,
+    birthday DATE NOT NULL,
+    login VARCHAR(20) NOT NULL UNIQUE,
+    password VARCHAR(30) NOT NULL,
+    balance NUMERIC NOT NULL
+);
+
+CREATE TABLE Phone (
+    client_id INTEGER NOT NULL,
+    phone VARCHAR(12) NOT NULL
+);
+
+CREATE TABLE Email (
+   client_id INTEGER NOT NULL,
+   email VARCHAR(35) NOT NULL
+);
