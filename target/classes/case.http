@@ -6,7 +6,7 @@ Content-Type: application/json
   "id": 2,
   "fio": "Smith Jak Bin",
   "birthday": "1999-10-10",
-  "phone": ["+7937998855", "+76665552233"],
+  "phone": ["89937998855", "86665552233"],
   "email": ["qwertyyy@gmail.com", "rrrriii@mail.ru"],
   "login": "trtrtrtrtrt",
   "password": "postgreSQL",
@@ -14,4 +14,4 @@ Content-Type: application/json
 }
 
 ### find by param
-GET http://localhost:8999/api/v1/clients/?phone=+79370001245
+GET http://localhost:8999/api/v1/clients/?phone=89370001245

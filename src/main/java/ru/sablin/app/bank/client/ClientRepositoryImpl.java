@@ -1,11 +1,15 @@
 package ru.sablin.app.bank.client;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ru.sablin.app.bank.client.exception.ClientNotFoundException;
+import ru.sablin.app.bank.client.exception.EmailException;
+import ru.sablin.app.bank.client.exception.PhoneException;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,16 +57,21 @@ public class ClientRepositoryImpl implements ClientRepository {
          * phone
          */
         if (phone != null && email == null) {
-            var clientIdInDbPhone = jdbcTemplate.queryForObject("select client_id from Phone where phone = ?",
-                    new BeanPropertyRowMapper<>(Integer.class), phone);
+            Integer clientIdInDbPhone;
+            try {
+                clientIdInDbPhone = jdbcTemplate.queryForObject("select client_id from Phone where phone = ?",
+                        Integer.class, phone);
+            } catch (EmptyResultDataAccessException e) {
+                throw new PhoneException("Phone not found in data base");
+            }
 
             // получаем все телефоны по clientIdInDbPhone из таблицы Phone
-            var allPhoneInDbPhone = jdbcTemplate.query("select phone from Phone where client_id = ?",
-                    new BeanPropertyRowMapper<>(String.class), clientIdInDbPhone);
+            var allPhoneInDbPhone = jdbcTemplate.queryForList("select phone from Phone where client_id = ?",
+                    String.class, clientIdInDbPhone);
 
             // получаем все emails по clientIdInDbPhone из таблицы Email
-            var allEmailInDbEmail = jdbcTemplate.query("select email from Email where client_id = ?",
-                    new BeanPropertyRowMapper<>(String.class), clientIdInDbPhone);
+            var allEmailInDbEmail = jdbcTemplate.queryForList("select email from Email where client_id = ?",
+                    String.class, clientIdInDbPhone);
 
             // добавляем все почты в результирующий список для ClientDto
             if (!allEmailInDbEmail.isEmpty()) {
@@ -85,16 +94,22 @@ public class ClientRepositoryImpl implements ClientRepository {
          * email
          */
         if (email != null && phone == null) {
-            var clientIdDbEmail = jdbcTemplate.queryForObject("select client_id from Email where email = ?",
-                    new BeanPropertyRowMapper<>(Integer.class), email);
+
+            Integer clientIdDbEmail;
+            try {
+                clientIdDbEmail = jdbcTemplate.queryForObject("select client_id from Email where email = ?",
+                        Integer.class, email);
+            } catch (EmptyResultDataAccessException e) {
+                throw new EmailException("Email not found in data base");
+            }
 
             // получаем все emails по clientIdInDbEmail из таблицы Email
-            var allEmailInDbEmail = jdbcTemplate.query("select email from Email where client_id = ?",
-                    new BeanPropertyRowMapper<>(String.class), clientIdDbEmail);
+            var allEmailInDbEmail = jdbcTemplate.queryForList("select email from Email where client_id = ?",
+                    String.class, clientIdDbEmail);
 
             // получаем все телефоны по clientIdInDbEmail из таблицы Phone
-            var allPhoneInDbPhone = jdbcTemplate.query("select phone from Phone where client_id = ?",
-                    new BeanPropertyRowMapper<>(String.class), clientIdDbEmail);
+            var allPhoneInDbPhone = jdbcTemplate.queryForList("select phone from Phone where client_id = ?",
+                    String.class, clientIdDbEmail);
 
             // добавляем все почты в результирующий список для ClientDto
             if (!allEmailInDbEmail.isEmpty()) {
@@ -117,24 +132,35 @@ public class ClientRepositoryImpl implements ClientRepository {
          * email and phone
          */
         if (email != null && phone != null) {
-            // достаем client_id по почте
-            var clientIdEmailDb = jdbcTemplate.queryForObject("select client_id from Email where email = ?",
-                    new BeanPropertyRowMapper<>(Integer.class), email);
 
-            // достаем client_id по телефону
-            var clientIdInDbPhone = jdbcTemplate.queryForObject("select client_id from Phone where phone = ?",
-                    new BeanPropertyRowMapper<>(Integer.class), phone);
+            Integer clientIdEmailDb;
+            try {
+                // достаем client_id по почте
+                clientIdEmailDb = jdbcTemplate.queryForObject("select client_id from Email where email = ?",
+                        Integer.class, email);
+            } catch (EmptyResultDataAccessException e) {
+                throw new EmailException("Email not found in data base");
+            }
+
+            Integer clientIdInDbPhone;
+            try {
+                // достаем client_id по телефону
+                clientIdInDbPhone = jdbcTemplate.queryForObject("select client_id from Phone where phone = ?",
+                        Integer.class, phone);
+            } catch (EmptyResultDataAccessException e) {
+                throw new PhoneException("Phone not found in data base");
+            }
 
             // проверяем что client_id из таблицы телефоны и таблицы почта равны
             if ((clientIdEmailDb != null && clientIdInDbPhone != null) && clientIdInDbPhone.equals(clientIdEmailDb)) {
 
                 // получаем все emails по clientIdEmailDb из таблицы Email
-                var allEmailInDbEmail = jdbcTemplate.query("select email from Email where client_id = ?",
-                        new BeanPropertyRowMapper<>(String.class), clientIdEmailDb);
+                var allEmailInDbEmail = jdbcTemplate.queryForList("select email from Email where client_id = ?",
+                        String.class, clientIdEmailDb);
 
                 // получаем все телефоны по clientIdInDbEmail из таблицы Phone
-                var allPhoneInDbPhone = jdbcTemplate.query("select phone from Phone where client_id = ?",
-                        new BeanPropertyRowMapper<>(String.class), clientIdInDbPhone);
+                var allPhoneInDbPhone = jdbcTemplate.queryForList("select phone from Phone where client_id = ?",
+                        String.class, clientIdInDbPhone);
 
                 // добавляем все почты в результирующий список для ClientDto
                 if (!allEmailInDbEmail.isEmpty()) {
@@ -157,13 +183,18 @@ public class ClientRepositoryImpl implements ClientRepository {
         var condition = "";
 
         if (fio != null) {
-            condition += getStrings(condition);
+            condition += " WHERE ";
             condition += String.format("fio LIKE '%%%s%%'", fio);
         }
 
         if (birthday != null) {
-            condition += getStrings(condition);
-            condition += String.format("birthday > %s", birthday);
+            if (condition.isEmpty()) {
+                condition += " WHERE ";
+                condition += String.format("birthday > '%s'", birthday);
+            } else {
+                condition += " AND ";
+                condition += String.format("birthday > '%s'", birthday);
+            }
         }
 
         var sqlQuery = String.format("""
@@ -174,63 +205,82 @@ public class ClientRepositoryImpl implements ClientRepository {
 
 
         var clientIdInDbClientByParamsFioOrBirthday =
-                jdbcTemplate.queryForObject(sqlQuery, new BeanPropertyRowMapper<>(Integer.class));
+                jdbcTemplate.queryForList(sqlQuery, Integer.class);
 
         // если у нас id равны значит возвращаем одного клиента
-        if (clientIdInDbClientByParamsFioOrBirthday != null && clientIdInDbClientByParamsFioOrBirthday.equals(clientId)) {
-           var clientDTO = jdbcTemplate.queryForObject("select id, fio, birthday from Client where id = ?", (rs, rowNum) ->
-                    ClientDto.builder()
+        if (!clientIdInDbClientByParamsFioOrBirthday.isEmpty()) {
+            for (Integer i : clientIdInDbClientByParamsFioOrBirthday) {
+                if (i.equals(clientId)) {
+                    var clientDTO =
+                            jdbcTemplate.queryForObject("""
+                                select id, fio, birthday, login, password, balance 
+                                from Client 
+                                where id = ?
+                                """,
+                            (rs, rowNum) ->
+                                ClientDto.builder()
+                                    .id(rs.getInt("id"))
+                                    .fio(rs.getString("fio"))
+                                    .birthday(rs.getObject("birthday", LocalDate.class))
+                                    .email(resultEmail)
+                                    .phone(resultPhone)
+                                    .login(rs.getString("login"))
+                                    .password(rs.getString("password"))
+                                    .balance(rs.getBigDecimal("balance"))
+                                    .build(), clientId);
+                    resultListClientDto.add(clientDTO);
+                    return resultListClientDto;
+                }
+            }
+        }
+
+        /**
+         * если clientId == 0, значит не передали параметры phone и email,
+         *  и это значит, что нужно получить из таблицы клиента все данные
+         *  и по id клиента вытащить почты, телефоны и положить их в результирующие списки,
+         *  и потом засунуть эти данные в список Dto и вернуть его
+         */
+        if (clientId == 0) {
+            // получаем всех подходящих под фильтр клиентов
+            var clientDtoListByParams = jdbcTemplate.query(String.format("select * from Client %s", condition),
+                    (rs, rowNum) -> ClientDtoDbTable.builder()
                             .id(rs.getInt("id"))
                             .fio(rs.getString("fio"))
                             .birthday(rs.getObject("birthday", LocalDate.class))
-                            .email(resultEmail)
-                            .phone(resultPhone)
-                            .build(), clientId);
-           resultListClientDto.add(clientDTO);
-           return resultListClientDto;
-
-        // если clientId == 0, значит не передали параметры phone и email,
-        // и это значит, что нужно получить из таблицы клиента все данные
-        // и по id клиента вытащить почты, телефоны и положить их в результирующие списки,
-        // и потом засунуть эти данные в список Dto и вернуть его
-        } else if (clientId == 0) {
-            // получаем всех подходящих под фильтр клиентов
-            var clientDtoListByParams = jdbcTemplate.query(String.format("select * from Client %s", condition),
-                    new BeanPropertyRowMapper<>(ClientDtoDbTable.class));
-
-            for (ClientDtoDbTable c : clientDtoListByParams) {
-                // получаем по каждому клиенту все его email
-                var listEmail = jdbcTemplate.query("select email from Email where client_id = ?",
-                        new BeanPropertyRowMapper<>(String.class), c.getId());
-
-                // получаем по каждому клиенту все его phone
-                var listPhone = jdbcTemplate.query("select phone from Phone where client_id = ?",
-                        new BeanPropertyRowMapper<>(String.class), c.getId());
-
-                // собираем список клиентов
-                resultListClientDto.add(
-                        ClientDto.builder()
-                            .id(c.getId())
-                            .fio(c.getFio())
-                            .birthday(c.getBirthday())
-                            .phone(listPhone)
-                            .email(listEmail)
+                            .balance(rs.getBigDecimal("balance"))
+                            .login(rs.getString("login"))
+                            .password(rs.getString("password"))
                             .build());
+
+            // иначе выбросить исключение, что по таким параметрам клиент не найден
+            if (clientDtoListByParams.isEmpty()) {
+                throw new ClientNotFoundException("Client not found by current params");
+            } else {
+                for (ClientDtoDbTable c : clientDtoListByParams) {
+                    // получаем по каждому клиенту все его email
+                    var listEmail = jdbcTemplate.queryForList("select email from Email where client_id = ?",
+                            String.class, c.getId());
+
+                    // получаем по каждому клиенту все его phone
+                    var listPhone = jdbcTemplate.queryForList("select phone from Phone where client_id = ?",
+                            String.class, c.getId());
+
+                    // собираем список клиентов
+                    resultListClientDto.add(
+                            ClientDto.builder()
+                                    .id(c.getId())
+                                    .fio(c.getFio())
+                                    .birthday(c.getBirthday())
+                                    .phone(listPhone)
+                                    .email(listEmail)
+                                    .login(c.getLogin())
+                                    .password(c.getPassword())
+                                    .balance(c.getBalance())
+                                    .build());
+                }
             }
-        // иначе выбросить исключение, что по таким параметрам клиент не найден
-        } else {
-            throw new ClientNotFoundException("Client not found by current params");
         }
         return resultListClientDto;
-    }
-
-    private String getStrings(String condition) {
-        if (!condition.isEmpty()) {
-            condition += " AND ";
-        } else {
-            condition += " WHERE ";
-        }
-        return condition;
     }
 
     @Override
