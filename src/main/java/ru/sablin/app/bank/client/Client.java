@@ -1,7 +1,9 @@
 package ru.sablin.app.bank.client;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -9,6 +11,8 @@ import java.util.List;
 
 @Data
 @Builder
+@RequiredArgsConstructor
+@AllArgsConstructor
 public class Client {
     private Integer id;
     private String fio;

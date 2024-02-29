@@ -3,12 +3,12 @@ POST http://localhost:8999/api/v1/clients/
 Content-Type: application/json
 
 {
-  "id": 2,
+  "id": 7,
   "fio": "Smith Jak Bin",
   "birthday": "1999-10-10",
-  "phone": ["89937998855", "86665552233"],
-  "email": ["qwertyyy@gmail.com", "rrrriii@mail.ru"],
-  "login": "trtrtrtrtrt",
+  "phone": ["89227771234", "89033806543"],
+  "email": ["cxcxcxc@gmail.com", "llll@mail.ru"],
+  "login": "ooooouuuuttt",
   "password": "postgreSQL",
   "balance": 201099
 }

@@ -23,15 +23,6 @@ public class ClientRepositoryImpl implements ClientRepository {
     @Transactional
     @Override
     public void create(Client client) {
-
-        for (String p : client.getPhone()) {
-            jdbcTemplate.update("INSERT INTO Phone VALUES (?,?)", client.getId(), p);
-        }
-
-        for (String e : client.getEmail()) {
-            jdbcTemplate.update("INSERT INTO Email VALUES (?,?)", client.getId(), e);
-        }
-
         jdbcTemplate.update("INSERT INTO Client VALUES (?,?,?,?,?,?)",
                 client.getId(),
                 client.getFio(),
@@ -40,6 +31,27 @@ public class ClientRepositoryImpl implements ClientRepository {
                 client.getPassword(),
                 client.getBalance());
 
+        var clientIdInDb =
+                jdbcTemplate.queryForObject(String.format("""
+                select id
+                from Client
+                where fio = '%s'
+                and birthday = '%s'
+                and login = '%s'
+                """, client.getFio(),
+                     client.getBirthday(),
+                     client.getLogin()),
+                    Integer.class);
+
+        if (clientIdInDb != null) {
+            for (String p : client.getPhone()) {
+                jdbcTemplate.update("INSERT INTO Phone VALUES (?,?)", clientIdInDb, p);
+            }
+
+            for (String e : client.getEmail()) {
+                jdbcTemplate.update("INSERT INTO Email VALUES (?,?)", clientIdInDb, e);
+            }
+        }
     }
 
     @Override
@@ -62,7 +74,7 @@ public class ClientRepositoryImpl implements ClientRepository {
                 clientIdInDbPhone = jdbcTemplate.queryForObject("select client_id from Phone where phone = ?",
                         Integer.class, phone);
             } catch (EmptyResultDataAccessException e) {
-                throw new PhoneException("Phone not found in data base");
+                throw new PhoneException("Phone not found");
             }
 
             // получаем все телефоны по clientIdInDbPhone из таблицы Phone
@@ -295,12 +307,12 @@ public class ClientRepositoryImpl implements ClientRepository {
     }
 
     @Override
-    public void removePhone(Integer clientId, String phone) {
+    public void removePhone(String phone) {
 
     }
 
     @Override
-    public void removeEmail(Integer clientId, String email) {
+    public void removeEmail(String email) {
 
     }
 }

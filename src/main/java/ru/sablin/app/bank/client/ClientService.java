@@ -5,6 +5,8 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.sablin.app.bank.client.exception.*;
+
+import java.time.LocalDate;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -22,8 +24,8 @@ public class ClientService {
         validPhone(client.getPhone());
 
         // проверяем что логин свободен
-        var loginInDb = jdbcTemplate.query("SELECT login FROM Client",
-                new BeanPropertyRowMapper<>(String.class));
+        var loginInDb = jdbcTemplate.queryForList("SELECT login FROM Client",
+                String.class);
 
         if (!loginInDb.isEmpty()) {
             for (String s : loginInDb) {
@@ -34,8 +36,8 @@ public class ClientService {
         }
 
         // проверяем что телефон свободен
-        var phoneInDb = jdbcTemplate.query("SELECT phone FROM Phone",
-                new BeanPropertyRowMapper<>(String.class));
+        var phoneInDb = jdbcTemplate.queryForList("SELECT phone FROM Phone",
+                String.class);
 
         if (!phoneInDb.isEmpty()) {
             for (String p : phoneInDb) {
@@ -48,8 +50,8 @@ public class ClientService {
         }
 
         // проверяем что почта свободна
-        var emailInDb = jdbcTemplate.query("SELECT email FROM Email",
-                new BeanPropertyRowMapper<>(String.class));
+        var emailInDb = jdbcTemplate.queryForList("SELECT email FROM Email",
+                String.class);
 
         if (!emailInDb.isEmpty()) {
             for (String e : emailInDb) {
@@ -74,12 +76,19 @@ public class ClientService {
         }
     }
     private void validPhone(List<String> phone) {
-        var number = "\\+7\\d{10}";
+        var number = "8\\d{10}";
         for (String p : phone) {
             if (!p.matches(number)) {
                 throw new PhoneException(String.format("%s this phone is invalid", p));
             }
         }
+    }
+
+    public List<ClientDto> getByParams(LocalDate birthday,
+                                       String phone,
+                                       String fio,
+                                       String email) {
+        return repository.findByParam(birthday, phone, fio, email);
     }
 
     public void addEmail(Integer clientId, String email) {}

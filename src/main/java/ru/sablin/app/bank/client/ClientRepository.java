@@ -10,10 +10,12 @@ public interface ClientRepository {
     void create(Client client);
 
     void addEmail(Integer clientId, String email);
+
     void addPhone(Integer clientId, String phone);
-    // скорее всего не нужен id для удаления
-    void removePhone(Integer clientId, String phone);
-    void removeEmail(Integer clientId, String email);
+
+    void removePhone(String phone);
+
+    void removeEmail(String email);
 
     List<ClientDto> findByParam(LocalDate birthday,
                                 String phone,

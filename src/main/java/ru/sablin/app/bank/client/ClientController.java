@@ -12,7 +12,6 @@ import java.util.List;
 public class ClientController {
 
     private final ClientService service;
-    private final ClientRepository repository;
 
     @PostMapping("/")
     public void create(@RequestBody Client client) {
@@ -25,6 +24,6 @@ public class ClientController {
                                 @RequestParam(value = "fio", required = false) String fio,
                                 @RequestParam(value = "email", required = false) String email) {
 
-        return repository.findByParam(birthday, phone, fio, email);
+        return service.getByParams(birthday, phone, fio, email);
     }
 }
