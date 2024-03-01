@@ -91,6 +91,23 @@ public class ClientService {
         return repository.findByParam(birthday, phone, fio, email);
     }
 
-    public void addEmail(Integer clientId, String email) {}
+    public void addEmail(Integer clientId, String email) {
+        validEmail(List.of(email));
+        repository.addEmail(clientId, email);
+    }
 
+    public void addPhone(Integer clientId, String phone) {
+        validPhone(List.of(phone));
+        repository.addPhone(clientId, phone);
+    }
+
+    public void removePhone(String phone) {
+        validPhone(List.of(phone));
+        repository.removePhone(phone);
+    }
+
+    public void removeEmail(String email) {
+        validEmail(List.of(email));
+        repository.removeEmail(email);
+    }
 }

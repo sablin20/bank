@@ -4,11 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSourceUtils;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-import ru.sablin.app.bank.client.exception.ClientNotFoundException;
-import ru.sablin.app.bank.client.exception.EmailException;
-import ru.sablin.app.bank.client.exception.PhoneException;
+import ru.sablin.app.bank.client.exception.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -19,37 +19,33 @@ import java.util.List;
 public class ClientRepositoryImpl implements ClientRepository {
 
     private final JdbcTemplate jdbcTemplate;
+    NamedParameterJdbcTemplate namedParamJdbcTemplate;
 
     @Transactional
     @Override
     public void create(Client client) {
-        jdbcTemplate.update("INSERT INTO Client VALUES (?,?,?,?,?,?)",
-                client.getId(),
+        jdbcTemplate.update("insert into Client (fio, birthday, login, password, balance) values (?,?,?,?,?)",
                 client.getFio(),
                 client.getBirthday(),
                 client.getLogin(),
                 client.getPassword(),
                 client.getBalance());
 
-        var clientIdInDb =
+        var clientId =
                 jdbcTemplate.queryForObject(String.format("""
                 select id
                 from Client
-                where fio = '%s'
-                and birthday = '%s'
-                and login = '%s'
-                """, client.getFio(),
-                     client.getBirthday(),
-                     client.getLogin()),
+                where login = '%s'
+                """, client.getLogin()),
                     Integer.class);
 
-        if (clientIdInDb != null) {
+        if (clientId != null) {
             for (String p : client.getPhone()) {
-                jdbcTemplate.update("INSERT INTO Phone VALUES (?,?)", clientIdInDb, p);
+                jdbcTemplate.update("insert into Phone values (?,?)", clientId, p);
             }
 
             for (String e : client.getEmail()) {
-                jdbcTemplate.update("INSERT INTO Email VALUES (?,?)", clientIdInDb, e);
+                jdbcTemplate.update("insert into Email values (?,?)", clientId, e);
             }
         }
     }
@@ -297,22 +293,97 @@ public class ClientRepositoryImpl implements ClientRepository {
 
     @Override
     public void addEmail(Integer clientId, String email) {
+        // проверяем что есть клиент с таким id
+        try {
+            var idClient = jdbcTemplate.queryForObject("select id from Client where id = ?",
+                    Integer.class, clientId);
+        } catch (EmptyResultDataAccessException e) {
+            throw new ClientNotFoundException(String.format("Not found client with current id = %s", clientId));
+        }
+
+        // проверяем что почта свободна
+        var listEmail = jdbcTemplate.queryForList("select email from Email", String.class);
+        if (listEmail.contains(email)) {
+            throw new EmailBusyException(String.format("Email = %s, busy", email));
+        }
 
         jdbcTemplate.update("insert into Email values (?,?)", clientId, email);
     }
 
     @Override
     public void addPhone(Integer clientId, String phone) {
+        // проверяем что есть клиент с таким id
+        try {
+            var idClient = jdbcTemplate.queryForObject("select id from Client where id = ?",
+                    Integer.class, clientId);
+        } catch (EmptyResultDataAccessException e) {
+            throw new ClientNotFoundException(String.format("Not found client with current id = %s", clientId));
+        }
 
+        // проверяем что телефон свободен
+        var listPhone = jdbcTemplate.queryForList("select phone from Phone", String.class);
+        if (listPhone.contains(phone)) {
+            throw new PhoneBusyException(String.format("Phone = %s, busy", phone));
+        }
+
+        jdbcTemplate.update("insert into Phone values (?,?)", clientId, phone);
     }
 
+    // нельзя удалить телефон если он последний у данного клиента,
+    // должен остаться минимум 1
     @Override
     public void removePhone(String phone) {
+        // получаем список телефонов
+        var listPhone = jdbcTemplate.queryForList("select phone from Phone", String.class);
 
+        // проверяем что такой телефон существует
+        if (listPhone.isEmpty() || !listPhone.contains(phone)) {
+            throw new PhoneException(String.format("Phone = %s not found", phone));
+        }
+
+        var list = jdbcTemplate.queryForList("""
+                select phone
+                from Phone
+                where client_id =
+                    (select client_id
+                    from Phone
+                    where phone = ?)
+                """,
+                String.class, phone);
+
+        // проверяем что телефон не последний
+        if (list.size() <= 1) {
+            throw new PhoneLastException(String.format("This phone = %s, last", phone));
+        }
+
+        jdbcTemplate.update("delete from Phone where phone = ?", phone);
     }
 
     @Override
     public void removeEmail(String email) {
+        // получаем список email
+        var listEmail = jdbcTemplate.queryForList("select email from Email", String.class);
 
+        // проверяем что такой email существует
+        if (listEmail.isEmpty() || !listEmail.contains(email)) {
+            throw new EmailException(String.format("Email = %s not found", email));
+        }
+
+        var list = jdbcTemplate.queryForList("""
+                select email
+                from Email
+                where client_id =
+                    (select client_id
+                    from Email
+                    where email = ?)
+                """,
+                String.class, email);
+
+        // проверяем что email не последний
+        if (list.size() <= 1) {
+            throw new EmailLastException(String.format("This email = %s, last", email));
+        }
+
+        jdbcTemplate.update("delete from Email where email = ?", email);
     }
 }

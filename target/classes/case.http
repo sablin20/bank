@@ -19,7 +19,7 @@ GET http://localhost:8999/api/v1/clients/?phone=89370001245
 GET http://localhost:8999/api/v1/clients/addEmail?clientId=1&email=eeeeee@mail.ru
 
 ### delete Email
-DELETE http://localhost:8999/api/v1/clients/email/wewrwewrw@mail.ru
+DELETE http://localhost:8999/api/v1/clients/email/sadadada@mail.ru
 
 ### add Phone
 GET http://localhost:8999/api/v1/clients/addPhone?clientId=1&phone=89033124455
