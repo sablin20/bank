@@ -1,6 +1,7 @@
 package ru.sablin.app.bank.client;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -13,6 +14,7 @@ import java.util.List;
 public class ClientController {
 
     private final ClientService service;
+    private final ClientRepositoryImpl repository;
 
     @PostMapping("/")
     public void create(@RequestBody Client client) {

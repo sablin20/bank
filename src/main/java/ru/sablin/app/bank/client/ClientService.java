@@ -2,6 +2,7 @@ package ru.sablin.app.bank.client;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.sablin.app.bank.client.exception.*;
 
