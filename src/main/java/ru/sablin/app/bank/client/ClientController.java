@@ -3,6 +3,7 @@ package ru.sablin.app.bank.client;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -19,10 +20,10 @@ public class ClientController {
     }
 
     @GetMapping("/")
-    public List<ClientDto> find(@RequestParam(value = "birthday", required = false) LocalDate birthday,
-                                @RequestParam(value = "phone", required = false) String phone,
-                                @RequestParam(value = "fio", required = false) String fio,
-                                @RequestParam(value = "email", required = false) String email) {
+    public List<Client> find(@RequestParam(value = "birthday", required = false) LocalDate birthday,
+                             @RequestParam(value = "phone", required = false) String phone,
+                             @RequestParam(value = "fio", required = false) String fio,
+                             @RequestParam(value = "email", required = false) String email) {
 
         return service.getByParams(birthday, phone, fio, email);
     }
@@ -47,5 +48,17 @@ public class ClientController {
     @DeleteMapping("/email/{email}")
     public void removeEmail(@PathVariable("email") String email) {
         service.removeEmail(email);
+    }
+
+    @PutMapping("/")
+    public void increaseInBalance() throws InterruptedException {
+        service.increaseInBalance();
+    }
+
+    @PutMapping("/transfer")
+    public void moneyTransfer(@RequestParam("clientIdSender") Integer clientIdSender,
+                              @RequestParam("clientIdRecipient") Integer clientIdRecipient,
+                              @RequestParam("money") BigDecimal money) {
+        service.moneyTransfer(clientIdSender, clientIdRecipient, money);
     }
 }
