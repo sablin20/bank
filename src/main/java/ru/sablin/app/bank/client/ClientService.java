@@ -3,9 +3,11 @@ package ru.sablin.app.bank.client;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.sablin.app.bank.client.exception.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -109,5 +111,16 @@ public class ClientService {
     public void removeEmail(String email) {
         validEmail(List.of(email));
         repository.removeEmail(email);
+    }
+
+
+    public void increaseInBalance() throws InterruptedException {
+        repository.increaseInBalance();
+    }
+
+    public void moneyTransfer(Integer clientIdSender,
+                              Integer clientIdRecipient,
+                              BigDecimal money) {
+        repository.moneyTransfer(clientIdSender, clientIdRecipient, money);
     }
 }

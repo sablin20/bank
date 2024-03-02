@@ -1,8 +1,10 @@
 package ru.sablin.app.bank.client;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -12,6 +14,7 @@ import java.util.List;
 public class ClientController {
 
     private final ClientService service;
+    private final ClientRepositoryImpl repository;
 
     @PostMapping("/")
     public void create(@RequestBody Client client) {
@@ -47,5 +50,17 @@ public class ClientController {
     @DeleteMapping("/email/{email}")
     public void removeEmail(@PathVariable("email") String email) {
         service.removeEmail(email);
+    }
+
+    @PutMapping("/")
+    public void increaseInBalance() throws InterruptedException {
+        service.increaseInBalance();
+    }
+
+    @PutMapping("/transfer")
+    public void moneyTransfer(@RequestParam("clientIdSender") Integer clientIdSender,
+                              @RequestParam("clientIdRecipient") Integer clientIdRecipient,
+                              @RequestParam("money") BigDecimal money) {
+        service.moneyTransfer(clientIdSender, clientIdRecipient, money);
     }
 }

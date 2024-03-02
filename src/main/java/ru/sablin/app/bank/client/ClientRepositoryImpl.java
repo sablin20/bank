@@ -6,13 +6,17 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSourceUtils;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import ru.sablin.app.bank.client.exception.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -24,7 +28,14 @@ public class ClientRepositoryImpl implements ClientRepository {
     @Transactional
     @Override
     public void create(Client client) {
-        jdbcTemplate.update("insert into Client (fio, birthday, login, password, balance) values (?,?,?,?,?)",
+        jdbcTemplate.update("""
+                insert into Client (fio,
+                                    birthday,
+                                    login,
+                                    password,
+                                    balance)
+                values (?,?,?,?,?)
+                """,
                 client.getFio(),
                 client.getBirthday(),
                 client.getLogin(),
@@ -298,13 +309,13 @@ public class ClientRepositoryImpl implements ClientRepository {
             var idClient = jdbcTemplate.queryForObject("select id from Client where id = ?",
                     Integer.class, clientId);
         } catch (EmptyResultDataAccessException e) {
-            throw new ClientNotFoundException(String.format("Not found client with current id = %s", clientId));
+            throw new ClientNotFoundException(String.format("Client with id = %s is not found", clientId));
         }
 
         // проверяем что почта свободна
         var listEmail = jdbcTemplate.queryForList("select email from Email", String.class);
         if (listEmail.contains(email)) {
-            throw new EmailBusyException(String.format("Email = %s, busy", email));
+            throw new EmailBusyException(String.format("Email = %s is busy", email));
         }
 
         jdbcTemplate.update("insert into Email values (?,?)", clientId, email);
@@ -317,13 +328,13 @@ public class ClientRepositoryImpl implements ClientRepository {
             var idClient = jdbcTemplate.queryForObject("select id from Client where id = ?",
                     Integer.class, clientId);
         } catch (EmptyResultDataAccessException e) {
-            throw new ClientNotFoundException(String.format("Not found client with current id = %s", clientId));
+            throw new ClientNotFoundException(String.format("Client with id = %s is not found", clientId));
         }
 
         // проверяем что телефон свободен
         var listPhone = jdbcTemplate.queryForList("select phone from Phone", String.class);
         if (listPhone.contains(phone)) {
-            throw new PhoneBusyException(String.format("Phone = %s, busy", phone));
+            throw new PhoneBusyException(String.format("Phone = %s is busy", phone));
         }
 
         jdbcTemplate.update("insert into Phone values (?,?)", clientId, phone);
@@ -333,14 +344,6 @@ public class ClientRepositoryImpl implements ClientRepository {
     // должен остаться минимум 1
     @Override
     public void removePhone(String phone) {
-        // получаем список телефонов
-        var listPhone = jdbcTemplate.queryForList("select phone from Phone", String.class);
-
-        // проверяем что такой телефон существует
-        if (listPhone.isEmpty() || !listPhone.contains(phone)) {
-            throw new PhoneException(String.format("Phone = %s not found", phone));
-        }
-
         var list = jdbcTemplate.queryForList("""
                 select phone
                 from Phone
@@ -351,9 +354,14 @@ public class ClientRepositoryImpl implements ClientRepository {
                 """,
                 String.class, phone);
 
+        // проверяем что phone есть в базе
+        if (!list.contains(phone)) {
+            throw new PhoneException(String.format("Phone = %s not found", phone));
+        }
+
         // проверяем что телефон не последний
         if (list.size() <= 1) {
-            throw new PhoneLastException(String.format("This phone = %s, last", phone));
+            throw new PhoneLastException(String.format("This phone = %s is last", phone));
         }
 
         jdbcTemplate.update("delete from Phone where phone = ?", phone);
@@ -361,29 +369,102 @@ public class ClientRepositoryImpl implements ClientRepository {
 
     @Override
     public void removeEmail(String email) {
-        // получаем список email
-        var listEmail = jdbcTemplate.queryForList("select email from Email", String.class);
+        var list = jdbcTemplate.queryForList("""
+            select email
+            from Email
+            where client_id =
+                (select client_id
+                from Email
+                where email = ?)
+            """,
+            String.class, email);
 
-        // проверяем что такой email существует
-        if (listEmail.isEmpty() || !listEmail.contains(email)) {
+        // проверяем что почта есть в базе
+        if (!list.contains(email)) {
             throw new EmailException(String.format("Email = %s not found", email));
         }
-
-        var list = jdbcTemplate.queryForList("""
-                select email
-                from Email
-                where client_id =
-                    (select client_id
-                    from Email
-                    where email = ?)
-                """,
-                String.class, email);
-
         // проверяем что email не последний
         if (list.size() <= 1) {
-            throw new EmailLastException(String.format("This email = %s, last", email));
+            throw new EmailLastException(String.format("This email = %s is last", email));
         }
 
         jdbcTemplate.update("delete from Email where email = ?", email);
+    }
+
+    @Scheduled(cron = "* */1 * * * *")
+    @Override
+    public void increaseInBalance() {
+        var listClientId = jdbcTemplate.queryForList("select id from Client",
+                Integer.class);
+
+        for (Integer id : listClientId) {
+            var startBalance =
+                    Optional.ofNullable(jdbcTemplate.queryForObject("select balance from Client where id = ?",
+                    BigDecimal.class, id));
+            if (startBalance.isPresent()) {
+                var balance = startBalance.get().doubleValue();
+                while (balance < (startBalance.get().doubleValue() * 2.07)) {
+                    balance += balance * 0.05;
+                    try {
+                        Thread.sleep(60000);
+                    } catch (InterruptedException i) {
+                        i.printStackTrace();
+                    }
+                    jdbcTemplate.update("update Client set balance = ? where id = ?", balance, id);
+                }
+                balance = 0;
+            }
+            startBalance = Optional.empty();
+        }
+    }
+
+    // надо ли делать метод synchronized ??? по ТЗ, потокобезопасная операция должна быть
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Override
+    public void moneyTransfer(Integer clientIdSender,
+                              Integer clientIdRecipient,
+                              BigDecimal money) {
+
+        // проверяем что клиент существует
+        BigDecimal balanceSender;
+        try {
+            balanceSender = jdbcTemplate.queryForObject("select balance from Client where id = ?",
+                    BigDecimal.class, clientIdSender);
+        } catch (EmptyResultDataAccessException e) {
+            throw new ClientNotFoundException(String.format("Client with id = %s is not found", clientIdSender));
+        }
+
+        // проверяем что клиент существует
+        BigDecimal balanceRecipient;
+        try {
+            balanceRecipient = jdbcTemplate.queryForObject("select balance from Client where id = ?",
+                    BigDecimal.class, clientIdRecipient);
+        } catch (EmptyResultDataAccessException e) {
+            throw new ClientNotFoundException(String.format("Client with id = %s is not found", clientIdRecipient));
+        }
+
+
+        // проверяем что деньги указанны корректно
+        if (money == null || money.intValue() < 1) {
+            throw new MoneyInvalidException(String.format("Money = %s invalid", money));
+        }
+
+        //проверяем что денег достаточно для перевода
+        if (balanceSender != null && money.intValue() > balanceSender.intValue()) {
+            throw new NotEnoughMoneyBalance(String.format("There is not enough money in the account to transfer. Balance = %d",
+                    balanceSender.intValue()));
+        }
+
+        // проверяем что счет списания и счет зачисления разные
+        if (clientIdSender.equals(clientIdRecipient)) {
+            throw new TransferAndDebitFromOneAccountException("Transfers and debits from the same account are prohibited");
+        }
+
+        // списываем деньги со счета отправителя
+        jdbcTemplate.update("update Client set balance = ? where id = ?",
+                balanceSender.intValue() - money.intValue(), clientIdSender);
+        // зачисляем деньги на счет получателя
+        jdbcTemplate.update("update Client set balance = ? where id = ?",
+                balanceRecipient.intValue() + money.intValue(), clientIdRecipient);
     }
 }

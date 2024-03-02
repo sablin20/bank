@@ -2,6 +2,7 @@ package ru.sablin.app.bank.client;
 
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -21,4 +22,10 @@ public interface ClientRepository {
                                 String phone,
                                 String fio,
                                 String email);
+
+    void increaseInBalance();
+
+    void moneyTransfer(Integer clientIdSender,
+                       Integer clientIdRecipient,
+                       BigDecimal money);
 }
