@@ -13,12 +13,13 @@ import java.util.List;
 @RequiredArgsConstructor
 @AllArgsConstructor
 public class Client {
-    Integer id;
+    long id;
     String fio;
     LocalDate birthday;
     List<String> phone;
     List<String> email;
     String login;
     String password;
+    BigDecimal startBalance;
     BigDecimal balance;
 }

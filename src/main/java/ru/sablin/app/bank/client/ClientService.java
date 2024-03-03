@@ -2,10 +2,8 @@ package ru.sablin.app.bank.client;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.sablin.app.bank.client.exception.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -19,10 +17,15 @@ public class ClientService {
     private final JdbcTemplate jdbcTemplate;
 
     public void create(Client client) {
-
         // проверяем валидность почты и телефона
         validEmail(client.getEmail());
         validPhone(client.getPhone());
+
+        // проверяем, что стартовый баланс == текущему балансу на момент создания
+        if (!client.getStartBalance().equals(client.getBalance())) {
+            throw new BalanceInvalidException(String.format("Start balance = %s not equals current balance = %s",
+                    client.getStartBalance(), client.getBalance()));
+        }
 
         // проверяем что логин свободен
         var loginInDb = jdbcTemplate.queryForList("SELECT login FROM Client",
@@ -92,12 +95,12 @@ public class ClientService {
         return repository.findByParam(birthday, phone, fio, email);
     }
 
-    public void addEmail(Integer clientId, String email) {
+    public void addEmail(long clientId, String email) {
         validEmail(List.of(email));
         repository.addEmail(clientId, email);
     }
 
-    public void addPhone(Integer clientId, String phone) {
+    public void addPhone(long clientId, String phone) {
         validPhone(List.of(phone));
         repository.addPhone(clientId, phone);
     }
@@ -113,12 +116,12 @@ public class ClientService {
     }
 
 
-    public void increaseInBalance() throws InterruptedException {
+    public void increaseInBalance() {
         repository.increaseInBalance();
     }
 
-    public void moneyTransfer(Integer clientIdSender,
-                              Integer clientIdRecipient,
+    public void moneyTransfer(long clientIdSender,
+                              long clientIdRecipient,
                               BigDecimal money) {
         repository.moneyTransfer(clientIdSender, clientIdRecipient, money);
     }

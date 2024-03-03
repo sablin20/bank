@@ -14,14 +14,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.logging.Logger;
 
 @Repository
 @RequiredArgsConstructor
 public class ClientRepositoryImpl implements ClientRepository {
 
     private final JdbcTemplate jdbcTemplate;
-    NamedParameterJdbcTemplate namedParamJdbcTemplate;
 
     @Transactional
     @Override
@@ -260,7 +259,7 @@ public class ClientRepositoryImpl implements ClientRepository {
         if (clientId == 0) {
             // получаем всех подходящих под фильтр клиентов
             var clientDtoListByParams = jdbcTemplate.query(String.format("select * from Client %s", condition),
-                    (rs, rowNum) -> ClientDtoDbTable.builder()
+                    (rs, rowNum) -> ClientDtoDb.builder()
                             .id(rs.getInt("id"))
                             .fio(rs.getString("fio"))
                             .birthday(rs.getObject("birthday", LocalDate.class))
@@ -273,7 +272,7 @@ public class ClientRepositoryImpl implements ClientRepository {
             if (clientDtoListByParams.isEmpty()) {
                 throw new ClientNotFoundException("Client not found by current params");
             } else {
-                for (ClientDtoDbTable c : clientDtoListByParams) {
+                for (ClientDtoDb c : clientDtoListByParams) {
                     // получаем по каждому клиенту все его email
                     var listEmail = jdbcTemplate.queryForList("select email from Email where client_id = ?",
                             String.class, c.getId());
@@ -301,7 +300,7 @@ public class ClientRepositoryImpl implements ClientRepository {
     }
 
     @Override
-    public void addEmail(Integer clientId, String email) {
+    public void addEmail(long clientId, String email) {
         // проверяем что есть клиент с таким id
         try {
             var idClient = jdbcTemplate.queryForObject("select id from Client where id = ?",
@@ -320,7 +319,7 @@ public class ClientRepositoryImpl implements ClientRepository {
     }
 
     @Override
-    public void addPhone(Integer clientId, String phone) {
+    public void addPhone(long clientId, String phone) {
         // проверяем что есть клиент с таким id
         try {
             var idClient = jdbcTemplate.queryForObject("select id from Client where id = ?",
@@ -392,36 +391,33 @@ public class ClientRepositoryImpl implements ClientRepository {
     @Scheduled(cron = "*/60 * * * * *")
     @Override
     public void increaseInBalance() {
-        var listClientId = jdbcTemplate.queryForList("select id from Client",
-                Integer.class);
+        var clientList = jdbcTemplate.query("select id, start_balance, balance from Client", (rs, rowNum) -> {
+            return Client.builder()
+                    .id(rs.getInt("id"))
+                    .startBalance(rs.getBigDecimal("start_balance"))
+                    .balance(rs.getBigDecimal("balance"))
+                    .build();
+        });
 
-        for (Integer id : listClientId) {
-            var startBalance =
-                    Optional.ofNullable(jdbcTemplate.queryForObject("select balance from Client where id = ?",
-                    BigDecimal.class, id));
-            if (startBalance.isPresent()) {
-                var balance = startBalance.get().doubleValue();
-                while (balance < (startBalance.get().doubleValue() * 2.07)) {
-                    balance += balance * 0.05;
-                    try {
-                        Thread.sleep(60000);
-                    } catch (InterruptedException i) {
-                        i.printStackTrace();
-                    }
-                    jdbcTemplate.update("update Client set balance = ? where id = ?", balance, id);
-                }
-                balance = 0;
+        for (Client c : clientList) {
+            if (c.getBalance().doubleValue() < c.getStartBalance().doubleValue() * 2.07) {
+                jdbcTemplate.update("update Client set balance = ? where id = ?",
+                        c.getBalance().doubleValue() + c.getBalance().doubleValue() * 0.05, c.getId());
             }
-            startBalance = Optional.empty();
         }
     }
 
     // надо ли делать метод synchronized ??? по ТЗ, потокобезопасная операция должна быть
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     @Override
-    public void moneyTransfer(Integer clientIdSender,
-                              Integer clientIdRecipient,
+    public void moneyTransfer(long clientIdSender,
+                              long clientIdRecipient,
                               BigDecimal money) {
+
+        // проверяем что деньги указанны корректно
+        if (money == null || money.intValue() < 1) {
+            throw new MoneyInvalidException(String.format("Money = %s invalid", money));
+        }
 
         // проверяем что клиент существует
         BigDecimal balanceSender;
@@ -441,12 +437,6 @@ public class ClientRepositoryImpl implements ClientRepository {
             throw new ClientNotFoundException(String.format("Client with id = %s is not found", clientIdRecipient));
         }
 
-
-        // проверяем что деньги указанны корректно
-        if (money == null || money.intValue() < 1) {
-            throw new MoneyInvalidException(String.format("Money = %s invalid", money));
-        }
-
         //проверяем что денег достаточно для перевода
         if (balanceSender != null && money.intValue() > balanceSender.intValue()) {
             throw new NotEnoughMoneyBalance(String.format("There is not enough money in the account to transfer. Balance = %d",
@@ -454,7 +444,7 @@ public class ClientRepositoryImpl implements ClientRepository {
         }
 
         // проверяем что счет списания и счет зачисления разные
-        if (clientIdSender.equals(clientIdRecipient)) {
+        if (clientIdSender == clientIdRecipient) {
             throw new TransferAndDebitFromOneAccountException("Transfers and debits from the same account are prohibited");
         }
 

@@ -26,3 +26,9 @@ GET http://localhost:8999/api/v1/clients/addPhone?clientId=1&phone=89033124455
 
 ### delete Phone
 DELETE http://localhost:8999/api/v1/clients/phone/89370008899
+
+### increase In Balance
+PUT http://localhost:8999/api/v1/clients/
+
+### transfer
+PUT http://localhost:8999/api/v1/clients/transfer?clientIdSender=1&clientIdRecipient=2&money=10

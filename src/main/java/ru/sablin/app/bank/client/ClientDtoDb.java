@@ -11,11 +11,12 @@ import java.time.LocalDate;
 @Builder
 @Getter
 @Setter
-public class ClientDtoDbTable {
-    Integer id;
+public class ClientDtoDb {
+    long id;
     String fio;
     LocalDate birthday;
     String login;
     String password;
+    BigDecimal startBalance;
     BigDecimal balance;
 }

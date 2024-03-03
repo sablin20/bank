@@ -14,7 +14,6 @@ import java.util.List;
 public class ClientController {
 
     private final ClientService service;
-    private final ClientRepositoryImpl repository;
 
     @PostMapping("/")
     public void create(@RequestBody Client client) {
@@ -31,13 +30,13 @@ public class ClientController {
     }
 
     @GetMapping("/addEmail")
-    public void addEmail(@RequestParam("clientId") Integer clientId,
+    public void addEmail(@RequestParam("clientId") long clientId,
                          @RequestParam("email") String email) {
         service.addEmail(clientId, email);
     }
 
     @GetMapping("/addPhone")
-    public void addPhone(@RequestParam("clientId") Integer clientId,
+    public void addPhone(@RequestParam("clientId") long clientId,
                          @RequestParam("phone") String phone) {
         service.addPhone(clientId, phone);
     }
@@ -53,13 +52,13 @@ public class ClientController {
     }
 
     @PutMapping("/")
-    public void increaseInBalance() throws InterruptedException {
+    public void increaseInBalance() {
         service.increaseInBalance();
     }
 
     @PutMapping("/transfer")
-    public void moneyTransfer(@RequestParam("clientIdSender") Integer clientIdSender,
-                              @RequestParam("clientIdRecipient") Integer clientIdRecipient,
+    public void moneyTransfer(@RequestParam("clientIdSender") long clientIdSender,
+                              @RequestParam("clientIdRecipient") long clientIdRecipient,
                               @RequestParam("money") BigDecimal money) {
         service.moneyTransfer(clientIdSender, clientIdRecipient, money);
     }

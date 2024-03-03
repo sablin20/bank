@@ -10,9 +10,9 @@ import java.util.List;
 public interface ClientRepository {
     void create(Client client);
 
-    void addEmail(Integer clientId, String email);
+    void addEmail(long clientId, String email);
 
-    void addPhone(Integer clientId, String phone);
+    void addPhone(long clientId, String phone);
 
     void removePhone(String phone);
 
@@ -25,7 +25,7 @@ public interface ClientRepository {
 
     void increaseInBalance();
 
-    void moneyTransfer(Integer clientIdSender,
-                       Integer clientIdRecipient,
+    void moneyTransfer(long clientIdSender,
+                       long clientIdRecipient,
                        BigDecimal money);
 }

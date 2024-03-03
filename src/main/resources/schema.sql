@@ -4,6 +4,7 @@ CREATE TABLE Client (
     birthday DATE NOT NULL,
     login VARCHAR(20) NOT NULL UNIQUE,
     password VARCHAR(30) NOT NULL,
+    start_balance NUMERIC NOT NULL,
     balance NUMERIC NOT NULL
 );
 

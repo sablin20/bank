@@ -1,6 +1,6 @@
 INSERT INTO Client
-VALUES (1, 'Ivanov Ivan Ivanovich', '1999-12-25', 'qwerty777', 'postgres', 100),
-        (2, 'Messi Leonel Semovich', '1989-08-07', 'leoMessi10', 'barca', 100);
+VALUES (1, 'Ivanov Ivan Ivanovich', '1999-12-25', 'qwerty777', 'postgres', 100, 100),
+        (2, 'Messi Leonel Semovich', '1989-08-07', 'leoMessi10', 'barca', 100, 100);
 
 INSERT INTO Email
 VALUES (1, 'qwerty@mail.ru'),

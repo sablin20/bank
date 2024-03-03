@@ -9,8 +9,8 @@ CREATE TABLE Client (
 );
 
 CREATE TABLE Phone (
-    client_id INTEGER NOT NULL,
-    phone VARCHAR(12) NOT NULL UNIQUE
+   client_id INTEGER NOT NULL,
+   phone VARCHAR(12) NOT NULL UNIQUE
 );
 
 CREATE TABLE Email (
