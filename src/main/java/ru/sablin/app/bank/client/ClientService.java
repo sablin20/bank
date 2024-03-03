@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class ClientService {
 
-    private final ClientRepositoryImpl repository;
+    private final ClientRepository repository;
     private final JdbcTemplate jdbcTemplate;
 
     public void create(Client client) {
@@ -28,11 +28,11 @@ public class ClientService {
         }
 
         // проверяем что логин свободен
-        var loginInDb = jdbcTemplate.queryForList("SELECT login FROM Client",
+        var logins = jdbcTemplate.queryForList("SELECT login FROM Client",
                 String.class);
 
-        if (!loginInDb.isEmpty()) {
-            for (String s : loginInDb) {
+        if (!logins.isEmpty()) {
+            for (String s : logins) {
                 if (s.equals(client.getLogin())) {
                     throw new LoginBusyException(String.format("Login = %s, busy", client.getLogin()));
                 }
@@ -40,11 +40,11 @@ public class ClientService {
         }
 
         // проверяем что телефон свободен
-        var phoneInDb = jdbcTemplate.queryForList("SELECT phone FROM Phone",
+        var phones = jdbcTemplate.queryForList("SELECT phone FROM Phone",
                 String.class);
 
-        if (!phoneInDb.isEmpty()) {
-            for (String p : phoneInDb) {
+        if (!phones.isEmpty()) {
+            for (String p : phones) {
                 for (String ph : client.getPhone()) {
                     if (p.equals(ph)) {
                         throw new PhoneBusyException(String.format("Phone = %s, busy", ph));
@@ -54,11 +54,11 @@ public class ClientService {
         }
 
         // проверяем что почта свободна
-        var emailInDb = jdbcTemplate.queryForList("SELECT email FROM Email",
+        var emails = jdbcTemplate.queryForList("SELECT email FROM Email",
                 String.class);
 
-        if (!emailInDb.isEmpty()) {
-            for (String e : emailInDb) {
+        if (!emails.isEmpty()) {
+            for (String e : emails) {
                 for (String em : client.getEmail()) {
                     if (e.equals(em)) {
                         throw new EmailBusyException(String.format("Email = %s, busy", em));
@@ -92,7 +92,7 @@ public class ClientService {
                                     String phone,
                                     String fio,
                                     String email) {
-        return repository.findByParam(birthday, phone, fio, email);
+        return repository.findByParams(birthday, phone, fio, email);
     }
 
     public void addEmail(long clientId, String email) {
@@ -114,7 +114,6 @@ public class ClientService {
         validEmail(List.of(email));
         repository.removeEmail(email);
     }
-
 
     public void increaseInBalance() {
         repository.increaseInBalance();

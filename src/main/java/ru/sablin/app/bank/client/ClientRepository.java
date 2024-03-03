@@ -18,10 +18,10 @@ public interface ClientRepository {
 
     void removeEmail(String email);
 
-    List<Client> findByParam(LocalDate birthday,
-                             String phone,
-                             String fio,
-                             String email);
+    List<Client> findByParams(LocalDate birthday,
+                              String phone,
+                              String fio,
+                              String email);
 
     void increaseInBalance();
 

@@ -11,7 +11,7 @@ import java.time.LocalDate;
 @Builder
 @Getter
 @Setter
-public class ClientDtoDb {
+public class ClientDto {
     long id;
     String fio;
     LocalDate birthday;
