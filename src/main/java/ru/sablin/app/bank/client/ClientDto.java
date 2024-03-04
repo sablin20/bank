@@ -12,7 +12,7 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class ClientDto {
-    long id;
+    Integer id;
     String fio;
     LocalDate birthday;
     String login;

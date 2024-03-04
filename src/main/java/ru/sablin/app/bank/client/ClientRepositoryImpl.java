@@ -11,7 +11,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import ru.sablin.app.bank.email.EmailRepository;
 import ru.sablin.app.bank.exception.*;
+import ru.sablin.app.bank.phone.PhoneRepository;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -22,6 +25,8 @@ import java.util.List;
 public class ClientRepositoryImpl implements ClientRepository {
 
     private final JdbcTemplate jdbcTemplate;
+    private final PhoneRepository phoneRepository;
+    private final EmailRepository emailRepository;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     @Transactional
@@ -80,134 +85,47 @@ public class ClientRepositoryImpl implements ClientRepository {
                                      String phone,
                                      String fio,
                                      String email) {
-
         var resultListClient = new ArrayList<Client>();
         var resultEmail = new ArrayList<String>();
         var resultPhone = new ArrayList<String>();
         var clientId = 0;
 
-        /**
-         * phone
-         */
-        if (phone != null && email == null) {
-            Integer clientIdByPhone;
-            try {
-                clientIdByPhone = jdbcTemplate.queryForObject("select client_id from Phone where phone = ?",
-                        Integer.class, phone);
-            } catch (EmptyResultDataAccessException e) {
-                throw new PhoneException("Phone not found");
-            }
-
-            // получаем все телефоны по clientIdByPhone из таблицы Phone
-            var listPhones = jdbcTemplate.queryForList("select phone from Phone where client_id = ?",
-                    String.class, clientIdByPhone);
-
-            // получаем все emails по clientIdByPhone из таблицы Email
-            var listEmails = jdbcTemplate.queryForList("select email from Email where client_id = ?",
-                    String.class, clientIdByPhone);
-
-            // добавляем все почты в результирующий список для Client
-            if (!listEmails.isEmpty()) {
+        if (phone != null) {
+            var listPhones = phoneRepository.findByPhone(phone);
+            var clientIdByPhone = phoneRepository.findClientIdByPhone(phone);
+            resultPhone.addAll(listPhones);
+            if (email == null) {
+                var listEmails = emailRepository.findByClientId(clientIdByPhone);
                 resultEmail.addAll(listEmails);
             }
-
-            // добавляем все телефоны в результирующий список для Client
-            if (!listPhones.isEmpty()) {
-                resultPhone.addAll(listPhones);
-            }
-
-            // добавляем clientId по которому будем сравнивать, если придут другие параметры
-            if (clientIdByPhone != null) {
-                clientId = clientIdByPhone;
-            }
-            // по итогу у нас есть клиент ид, list email и list phone
+            clientId = clientIdByPhone;
         }
 
-        /**
-         * email
-         */
-        if (email != null && phone == null) {
-            Integer clientIdByEmail;
-            try {
-                clientIdByEmail = jdbcTemplate.queryForObject("select client_id from Email where email = ?",
-                        Integer.class, email);
-            } catch (EmptyResultDataAccessException e) {
-                throw new EmailException("Email not found in data base");
+        if (email != null) {
+            var listEmails = emailRepository.findByEmail(email);
+            var clientIdByEmail = emailRepository.findClientIdByEmail(email);
+            resultPhone.addAll(listEmails);
+            if (phone == null) {
+                var listPhones = phoneRepository.findByClientId(clientIdByEmail);
+                resultEmail.addAll(listPhones);
             }
-
-            // получаем все emails по clientIdByEmail из таблицы Email
-            var listEmails = jdbcTemplate.queryForList("select email from Email where client_id = ?",
-                    String.class, clientIdByEmail);
-
-            // получаем все телефоны по clientIdByEmail из таблицы Phone
-            var listPhones = jdbcTemplate.queryForList("select phone from Phone where client_id = ?",
-                    String.class, clientIdByEmail);
-
-            // добавляем все почты в результирующий список для Client
-            if (!listEmails.isEmpty()) {
-                resultEmail.addAll(listEmails);
-            }
-
-            // добавляем все телефоны в результирующий список для Client
-            if (!listPhones.isEmpty()) {
-                resultPhone.addAll(listPhones);
-            }
-
-            // добавляем clientId по которому будем сравнивать, если придут другие параметры
-            if (clientIdByEmail != null) {
-                clientId = clientIdByEmail;
-            }
-            // по итогу у нас есть клиент ид, list email и list phone
+            clientId = clientIdByEmail;
         }
 
-        /**
-         * email and phone
-         */
         if (email != null && phone != null) {
-            Integer clientIdByEmail;
-            try {
-                // достаем client_id по почте
-                clientIdByEmail = jdbcTemplate.queryForObject("select client_id from Email where email = ?",
-                        Integer.class, email);
-            } catch (EmptyResultDataAccessException e) {
-                throw new EmailException("Email not found in data base");
-            }
-
-            Integer clientIdByPhone;
-            try {
-                // достаем client_id по телефону
-                clientIdByPhone = jdbcTemplate.queryForObject("select client_id from Phone where phone = ?",
-                        Integer.class, phone);
-            } catch (EmptyResultDataAccessException e) {
-                throw new PhoneException("Phone not found in data base");
-            }
+            var clientIdByEmail = emailRepository.findClientIdByEmail(email);
+            var clientIdByPhone = phoneRepository.findClientIdByPhone(phone);
 
             // проверяем что client_id из таблицы телефоны и таблицы почта равны
-            if ((clientIdByEmail != null && clientIdByPhone != null) && clientIdByPhone.equals(clientIdByEmail)) {
-
-                // получаем все emails по clientIdByEmail из таблицы Email
-                var listEmails = jdbcTemplate.queryForList("select email from Email where client_id = ?",
-                        String.class, clientIdByEmail);
-
-                // получаем все телефоны по clientIdByEmail из таблицы Phone
-                var listPhones = jdbcTemplate.queryForList("select phone from Phone where client_id = ?",
-                        String.class, clientIdByPhone);
-
-                // добавляем все почты в результирующий список для Client
-                if (!listEmails.isEmpty()) {
-                    resultEmail.addAll(listEmails);
-                }
-
-                // добавляем все телефоны в результирующий список для Client
-                if (!listPhones.isEmpty()) {
-                    resultPhone.addAll(listPhones);
-                }
-
-                // добавляем clientId по которому будем сравнивать, если придут другие параметры
-                clientId = clientIdByEmail;
-
-                // по итогу у нас есть клиент ид, list email и list phone
+            if (clientIdByPhone.equals(clientIdByEmail)) {
+                // получаем все emails по clientIdByEmail из таблицы Email и добавляем в результирующий список
+                var listEmails = emailRepository.findByClientId(clientIdByEmail);
+                resultEmail.addAll(listEmails);
+                // получаем все телефоны по clientIdByPhone из таблицы Phone и добавляем в результирующий список
+                var listPhones = phoneRepository.findByClientId(clientIdByPhone);
+                resultPhone.addAll(listPhones);
             }
+            clientId = clientIdByEmail;
         }
 
         // формируем запрос по переданным параметрам
@@ -234,18 +152,17 @@ public class ClientRepositoryImpl implements ClientRepository {
             %s
             """, condition);
 
-
         var clientIdByParamsFioOrBirthday =
                 jdbcTemplate.queryForList(sqlQuery, Integer.class);
 
         // если у нас id равны значит возвращаем одного клиента
         if (!clientIdByParamsFioOrBirthday.isEmpty()) {
-            for (Integer i : clientIdByParamsFioOrBirthday) {
-                if (i.equals(clientId)) {
+            for (Integer id : clientIdByParamsFioOrBirthday) {
+                if (id.equals(clientId)) {
                     var client =
                             jdbcTemplate.queryForObject("""
-                                select id, fio, birthday, login, password, balance 
-                                from Client 
+                                select id, fio, birthday, login, password, balance
+                                from Client
                                 where id = ?
                                 """,
                             (rs, rowNum) ->
@@ -264,13 +181,6 @@ public class ClientRepositoryImpl implements ClientRepository {
                 }
             }
         }
-
-        /**
-         * если clientId == 0, значит не передали параметры phone и email,
-         *  и это значит, что нужно получить из таблицы клиента все данные
-         *  и по id клиента вытащить почты, телефоны и положить их в результирующие списки,
-         *  и потом засунуть эти данные в список Dto и вернуть его
-         */
         if (clientId == 0) {
             // получаем всех подходящих под фильтр клиентов
             var listClientDtoByParams = jdbcTemplate.query(String.format("select * from Client %s", condition),
@@ -287,26 +197,22 @@ public class ClientRepositoryImpl implements ClientRepository {
             if (listClientDtoByParams.isEmpty()) {
                 throw new ClientNotFoundException("Client not found by current params");
             } else {
-                for (ClientDto c : listClientDtoByParams) {
+                for (ClientDto clientDto : listClientDtoByParams) {
                     // получаем по каждому клиенту все его email
-                    var listEmail = jdbcTemplate.queryForList("select email from Email where client_id = ?",
-                            String.class, c.getId());
-
+                    var listEmail = emailRepository.findByClientId(clientDto.getId());
                     // получаем по каждому клиенту все его phone
-                    var listPhone = jdbcTemplate.queryForList("select phone from Phone where client_id = ?",
-                            String.class, c.getId());
-
+                    var listPhone = phoneRepository.findByClientId(clientDto.getId());
                     // собираем список клиентов
                     resultListClient.add(
                             Client.builder()
-                                    .id(c.getId())
-                                    .fio(c.getFio())
-                                    .birthday(c.getBirthday())
+                                    .id(clientDto.getId())
+                                    .fio(clientDto.getFio())
+                                    .birthday(clientDto.getBirthday())
                                     .phone(listPhone)
                                     .email(listEmail)
-                                    .login(c.getLogin())
-                                    .password(c.getPassword())
-                                    .balance(c.getBalance())
+                                    .login(clientDto.getLogin())
+                                    .password(clientDto.getPassword())
+                                    .balance(clientDto.getBalance())
                                     .build());
                 }
             }
@@ -380,4 +286,5 @@ public class ClientRepositoryImpl implements ClientRepository {
         jdbcTemplate.update("update Client set balance = ? where id = ?",
                 balanceRecipient.intValue() + money.intValue(), clientIdRecipient);
     }
+
 }

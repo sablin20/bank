@@ -1,11 +1,16 @@
 package ru.sablin.app.bank.client;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import ru.sablin.app.bank.email.EmailRepository;
 import ru.sablin.app.bank.exception.*;
+import ru.sablin.app.bank.phone.PhoneRepository;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -14,6 +19,7 @@ import java.util.regex.Pattern;
 public class ClientService {
 
     private final ClientRepository repository;
+
     private final JdbcTemplate jdbcTemplate;
 
     public void create(Client client) {

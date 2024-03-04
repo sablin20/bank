@@ -72,4 +72,18 @@ public class EmailService {
             }
         }
     }
+
+    public List<String> findByClientId(Integer clientId) {
+        return repository.findByClientId(clientId);
+    }
+
+    public Integer findClientIdByEmail(String email) {
+        validEmail(List.of(email));
+       return repository.findClientIdByEmail(email);
+    }
+
+    public List<String> findByEmail(String email) {
+        validEmail(List.of(email));
+        return repository.findByEmail(email);
+    }
 }

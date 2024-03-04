@@ -26,7 +26,7 @@ Content-Type: application/json
 }
 
 ### delete Email
-DELETE http://localhost:8999/api/v1/emails/wewrwewrw@mail.ru
+DELETE http://localhost:8999/api/v1/emails/?email=wewrwewrw@mail.ru
 
 ### add Phone
 GET http://localhost:8999/api/v1/phones/
@@ -38,7 +38,7 @@ Content-Type: application/json
 }
 
 ### delete Phone
-DELETE http://localhost:8999/api/v1/phones/89370008899
+DELETE http://localhost:8999/api/v1/phones/?phone=89370008899
 
 ### increase In Balance
 PUT http://localhost:8999/api/v1/clients/

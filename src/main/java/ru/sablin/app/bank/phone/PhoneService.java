@@ -65,6 +65,18 @@ public class PhoneService {
         repository.delete(phone);
     }
 
+    public List<String> findByPhone(String phone) {
+        return repository.findByPhone(phone);
+    }
+
+    public Integer findClientIdByPhone(String phone) {
+        return repository.findClientIdByPhone(phone);
+    }
+
+    public List<String> findByClientId(Integer clientId) {
+        return repository.findByClientId(clientId);
+    }
+
     private void validPhone(List<String> phone) {
         var number = "8\\d{10}";
         for (String p : phone) {
