@@ -3,7 +3,7 @@ package ru.sablin.app.bank.client;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import ru.sablin.app.bank.client.exception.*;
+import ru.sablin.app.bank.exception.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -22,7 +22,7 @@ public class ClientService {
         validPhone(client.getPhone());
 
         // проверяем, что стартовый баланс == текущему балансу на момент создания
-        if (!client.getStartBalance().equals(client.getBalance())) {
+        if ((client.getStartBalance() != null && client.getBalance() != null) && !client.getStartBalance().equals(client.getBalance())) {
             throw new BalanceInvalidException(String.format("Start balance = %s not equals current balance = %s",
                     client.getStartBalance(), client.getBalance()));
         }
@@ -93,26 +93,6 @@ public class ClientService {
                                     String fio,
                                     String email) {
         return repository.findByParams(birthday, phone, fio, email);
-    }
-
-    public void addEmail(long clientId, String email) {
-        validEmail(List.of(email));
-        repository.addEmail(clientId, email);
-    }
-
-    public void addPhone(long clientId, String phone) {
-        validPhone(List.of(phone));
-        repository.addPhone(clientId, phone);
-    }
-
-    public void removePhone(String phone) {
-        validPhone(List.of(phone));
-        repository.removePhone(phone);
-    }
-
-    public void removeEmail(String email) {
-        validEmail(List.of(email));
-        repository.removeEmail(email);
     }
 
     public void increaseInBalance() {

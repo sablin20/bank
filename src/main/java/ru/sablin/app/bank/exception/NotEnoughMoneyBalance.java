@@ -1,4 +1,4 @@
-package ru.sablin.app.bank.client.exception;
+package ru.sablin.app.bank.exception;
 
 public class NotEnoughMoneyBalance extends RuntimeException {
     public NotEnoughMoneyBalance(String message) {

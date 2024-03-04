@@ -1,4 +1,4 @@
-package ru.sablin.app.bank.client.exception;
+package ru.sablin.app.bank.exception;
 
 public class MoneyInvalidException extends RuntimeException {
     public MoneyInvalidException(String message) {

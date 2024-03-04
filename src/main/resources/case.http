@@ -5,27 +5,40 @@ Content-Type: application/json
 {
   "fio": "Smith Jak Bin",
   "birthday": "1999-10-10",
-  "phone": ["89227771234", "89033806543"],
-  "email": ["cxcxcxc@gmail.com", "llll@mail.ru"],
-  "login": "ooooouuuuttt",
+  "phone": ["89997778855", "89005556611"],
+  "email": ["eeeeeee@gmail.com", "ooooooooo@mail.ru"],
+  "login": "zzzzzzzzzzzzzPPPPP",
   "password": "postgreSQL",
-  "balance": 201099
+  "startBalance": 200,
+  "balance": 200
 }
 
 ### find by param
 GET http://localhost:8999/api/v1/clients/?phone=89370001245
 
 ### add Email
-GET http://localhost:8999/api/v1/clients/addEmail?clientId=1&email=eeeeee@mail.ru
+POST http://localhost:8999/api/v1/emails/
+Content-Type: application/json
+
+{
+  "clientId": 1,
+  "email": "dfdjfsdfsk@mail.ru"
+}
 
 ### delete Email
-DELETE http://localhost:8999/api/v1/clients/email/wewrwewrw@mail.ru
+DELETE http://localhost:8999/api/v1/emails/wewrwewrw@mail.ru
 
 ### add Phone
-GET http://localhost:8999/api/v1/clients/addPhone?clientId=1&phone=89033124455
+GET http://localhost:8999/api/v1/phones/
+Content-Type: application/json
+
+{
+  "clientId": 1,
+  "phone": "89006664411"
+}
 
 ### delete Phone
-DELETE http://localhost:8999/api/v1/clients/phone/89370008899
+DELETE http://localhost:8999/api/v1/phones/89370008899
 
 ### increase In Balance
 PUT http://localhost:8999/api/v1/clients/

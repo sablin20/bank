@@ -1,7 +1,6 @@
 package ru.sablin.app.bank.client;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -27,28 +26,6 @@ public class ClientController {
                              @RequestParam(value = "email", required = false) String email) {
 
         return service.getByParams(birthday, phone, fio, email);
-    }
-
-    @GetMapping("/addEmail")
-    public void addEmail(@RequestParam("clientId") long clientId,
-                         @RequestParam("email") String email) {
-        service.addEmail(clientId, email);
-    }
-
-    @GetMapping("/addPhone")
-    public void addPhone(@RequestParam("clientId") long clientId,
-                         @RequestParam("phone") String phone) {
-        service.addPhone(clientId, phone);
-    }
-
-    @DeleteMapping("/phone/{phone}")
-    public void removePhone(@PathVariable("phone") String phone) {
-        service.removePhone(phone);
-    }
-
-    @DeleteMapping("/email/{email}")
-    public void removeEmail(@PathVariable("email") String email) {
-        service.removeEmail(email);
     }
 
     @PutMapping("/")

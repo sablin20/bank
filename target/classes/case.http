@@ -5,11 +5,12 @@ Content-Type: application/json
 {
   "fio": "Smith Jak Bin",
   "birthday": "1999-10-10",
-  "phone": ["89227771234", "89033806543"],
-  "email": ["cxcxcxc@gmail.com", "llll@mail.ru"],
-  "login": "ooooouuuuttt",
+  "phone": ["89997778855", "89005556611"],
+  "email": ["eeeeeee@gmail.com", "ooooooooo@mail.ru"],
+  "login": "zzzzzzzzzzzzzPPPPP",
   "password": "postgreSQL",
-  "balance": 201099
+  "startBalance": 200,
+  "balance": 200
 }
 
 ### find by param

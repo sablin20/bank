@@ -4,10 +4,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
-import ru.sablin.app.bank.client.exception.ClientNotFoundException;
-import ru.sablin.app.bank.client.exception.MoneyInvalidException;
-import ru.sablin.app.bank.client.exception.NotEnoughMoneyBalance;
-import ru.sablin.app.bank.client.exception.TransferAndDebitFromOneAccountException;
+import ru.sablin.app.bank.exception.ClientNotFoundException;
+import ru.sablin.app.bank.exception.MoneyInvalidException;
+import ru.sablin.app.bank.exception.NotEnoughMoneyBalance;
+import ru.sablin.app.bank.exception.TransferAndDebitFromOneAccountException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

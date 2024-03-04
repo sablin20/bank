@@ -10,14 +10,6 @@ import java.util.List;
 public interface ClientRepository {
     void create(Client client);
 
-    void addEmail(long clientId, String email);
-
-    void addPhone(long clientId, String phone);
-
-    void removePhone(String phone);
-
-    void removeEmail(String email);
-
     List<Client> findByParams(LocalDate birthday,
                               String phone,
                               String fio,
